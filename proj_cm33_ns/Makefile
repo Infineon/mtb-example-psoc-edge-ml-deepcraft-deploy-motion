@@ -7,8 +7,8 @@
 #
 ################################################################################
 # \copyright
-# Copyright 2025, Cypress Semiconductor Corporation (an Infineon company)
-# SPDX-License-Identifier: Apache-2.0
+# (c) 2025, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ VERBOSE=
 # Neural Network Configuration. Options include
 #
 # float    -- floating point for the input data and weights
-# int8x8   -- 8-bit fixed-point for the input data and weights
+# int8x8   -- 8-bit fixed-point for the input data and weights (this is supported by default)
 NN_TYPE=int8x8
 
 # Choose the inference engine
@@ -97,13 +97,24 @@ COMPONENTS+=ML_TFLM
 DEFINES+=TF_LITE_STATIC_MEMORY
 endif
 
+ifeq (ACCELEROMETER_GYROSCOPE, $(IMU_ENABLE_SENSOR))
+DEFINES+=IMU_ACC
+DEFINES+=IMU_GYR
+endif
+
+ifeq (ACCELEROMETER, $(IMU_ENABLE_SENSOR))
+DEFINES+=IMU_ACC
+endif
+
+ifeq (GYROSCOPE, $(IMU_ENABLE_SENSOR))
+DEFINES+=IMU_GYR
+endif
+
 # Add define to build code for CM33 and include additional files
 ifeq (cm33, $(ML_DEEPCRAFT_CPU))
 DEFINES+=ML_DEEPCRAFT_CM33
 DEFINES+=CY_ML_MODEL_MEM=.cy_sram_code
 COMPONENTS+=CMSIS_DSP
-SEARCH+=../shared_src/
-SEARCH+=../Models
 endif
 
 # Depending which Neural Network Type, add a specific DEFINE and COMPONENT
@@ -112,6 +123,12 @@ COMPONENTS+=ML_FLOAT32
 endif
 ifeq (int8x8, $(NN_TYPE))
 COMPONENTS+=ML_INT8x8
+endif
+
+# Ignore the cm33 source files when CPU is cm55
+ifeq ($(ML_DEEPCRAFT_CPU),cm55)
+CY_IGNORE+=./model/model.c
+CY_IGNORE+=./imu.c
 endif
 
 # Select softfp or hardfp floating point. Default is softfp.

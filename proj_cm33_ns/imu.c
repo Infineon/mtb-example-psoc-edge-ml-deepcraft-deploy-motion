@@ -9,36 +9,33 @@
 *
 *
 ********************************************************************************
-* Copyright 2024-2025, Cypress Semiconductor Corporation (an Infineon company) or
-* an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
-*
-* This software, including source code, documentation and related
-* materials ("Software") is owned by Cypress Semiconductor Corporation
-* or one of its affiliates ("Cypress") and is protected by and subject to
-* worldwide patent protection (United States and foreign),
-* United States copyright laws and international treaty provisions.
-* Therefore, you may use this Software only as provided in the license
-* agreement accompanying the software package from which you
-* obtained this Software ("EULA").
-* If no EULA applies, Cypress hereby grants you a personal, non-exclusive,
-* non-transferable license to copy, modify, and compile the Software
-* source code solely for use in connection with Cypress's
-* integrated circuit products.  Any reproduction, modification, translation,
-* compilation, or representation of this Software except as specified
-* above is prohibited without the express written permission of Cypress.
-*
-* Disclaimer: THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, NONINFRINGEMENT, IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. Cypress
-* reserves the right to make changes to the Software without notice. Cypress
-* does not assume any liability arising out of the application or use of the
-* Software or any product or circuit described in the Software. Cypress does
-* not authorize its products for use in any products where a malfunction or
-* failure of the Cypress product may reasonably be expected to result in
-* significant property damage, injury or death ("High Risk Product"). By
-* including Cypress's product in a High Risk Product, the manufacturer
-* of such system or application assumes all risk of such use and in doing
-* so agrees to indemnify Cypress against all liability.
+* (c) 2024-2025, Infineon Technologies AG, or an affiliate of Infineon
+* Technologies AG. All rights reserved.
+* This software, associated documentation and materials ("Software") is
+* owned by Infineon Technologies AG or one of its affiliates ("Infineon")
+* and is protected by and subject to worldwide patent protection, worldwide
+* copyright laws, and international treaty provisions. Therefore, you may use
+* this Software only as provided in the license agreement accompanying the
+* software package from which you obtained this Software. If no license
+* agreement applies, then any use, reproduction, modification, translation, or
+* compilation of this Software is prohibited without the express written
+* permission of Infineon.
+* 
+* Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE
+* IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+* INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF
+* THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES SUCH AS WARRANTIES OF FITNESS FOR A
+* SPECIFIC USE/PURPOSE OR MERCHANTABILITY.
+* Infineon reserves the right to make changes to the Software without notice.
+* You are responsible for properly designing, programming, and testing the
+* functionality and safety of your intended application of the Software, as
+* well as complying with any legal requirements related to its use. Infineon
+* does not guarantee that the Software will be free from intrusion, data theft
+* or loss, or other breaches ("Security Breaches"), and Infineon shall have
+* no liability arising out of any Security Breaches. Unless otherwise
+* explicitly approved by Infineon, the Software may not be used in any
+* application where a failure of the Product or any consequences of the use
+* thereof can reasonably be expected to result in personal injury.
 *******************************************************************************/
 #include "cybsp.h"
 #include "mtb_bmi270.h"
@@ -51,19 +48,38 @@
 * Macros
 *******************************************************************************/
 #if IMU_SAMPLE_RANGE == BMI2_ACC_RANGE_2G
-#define IMU_DIVIDE                  0x4000
+#define IMU_ACC_DIVIDE     0x4000
 #elif IMU_SAMPLE_RANGE == BMI2_ACC_RANGE_4G
-#define IMU_DIVIDE                  0x2000
+#define IMU_ACC_DIVIDE     0x2000
 #elif IMU_SAMPLE_RANGE == BMI2_ACC_RANGE_8G
-#define IMU_DIVIDE                  0x1000
+#define IMU_ACC_DIVIDE     0x1000
 #elif IMU_SAMPLE_RANGE == BMI2_ACC_RANGE_16G
-#define IMU_DIVIDE                  0x800
-#endif
+#define IMU_ACC_DIVIDE     0x800
+#endif /* IMU_SAMPLE_RANGE */
 
+#if IMU_GYRO_SAMPLE_RANGE == BMI2_GYR_RANGE_125
+#define IMU_GYRO_DIVIDE    262.0f
+#elif IMU_GYRO_SAMPLE_RANGE == BMI2_GYR_RANGE_250
+#define IMU_GYRO_DIVIDE    131.0f
+#elif IMU_GYRO_SAMPLE_RANGE == BMI2_GYR_RANGE_500
+#define IMU_GYRO_DIVIDE    65.5f
+#elif IMU_GYRO_SAMPLE_RANGE == BMI2_GYR_RANGE_1000
+#define IMU_GYRO_DIVIDE    32.8f
+#elif IMU_GYRO_SAMPLE_RANGE == BMI2_GYR_RANGE_2000
+#define IMU_GYRO_DIVIDE    16.4f
+#endif /* IMU_GYRO_SAMPLE_RANGE */
+
+#if defined(IMU_ACC) && defined(IMU_GYR)
+#define IMU_NUM_AXIS                (6U)
+#else
 #define IMU_NUM_AXIS                (3U)
+#endif /* IMU_ACC && IMU_GYR */
 #define IMU_INTERRUPT_PRIORITY      (2U)
 #define IMU_INTR_MASK               (0x00000001UL << CYBSP_IMU_INT1_PORT_NUM)
 #define MASKED_TRUE                 (1U)
+
+/* Number of frames to skip before sending data for processing. */
+#define NUM_IMU_FRAMES_TO_SKIP      (1U)
 
 /*******************************************************************************
 * Global Variables
@@ -76,14 +92,24 @@ mtb_bmi270_t bmi270;
 /* Number of bytes of FIFO data */
 static uint8_t fifo_data[BMI2_FIFO_RAW_DATA_BUFFER_SIZE] = { 0 };
 
+#ifdef IMU_ACC 
 /* Array of accelerometer frames */
 static struct bmi2_sens_axes_data fifo_accel_data[BMI2_FIFO_ACCEL_FRAME_COUNT] = { { 0 } };
+#endif /* IMU_ACC */
+
+#ifdef IMU_GYR 
+/* Array of gyroscope frames */
+static struct bmi2_sens_axes_data fifo_gyro_data[BMI2_FIFO_GYRO_FRAME_COUNT] = { { 0 } };
+#endif /* IMU_GYR */
 
 /* Initialize FIFO frame structure. */
 struct bmi2_fifo_frame fifoframe = { 0 };
 
 /* Flag to check if the data from IMU is ready for processing. */
 static volatile bool imu_flag;
+
+/* Number of frames to skip before sending data for processing. */
+static uint8_t imu_skip_frames = NUM_IMU_FRAMES_TO_SKIP;
 
 /*******************************************************************************
 * Function Prototypes
@@ -152,27 +178,39 @@ cy_rslt_t imu_init(void)
         CY_ASSERT(0);
     }
 
-    /* Get the default IMU configuration and update it based on config.h */
-    struct bmi2_sens_config config = {0};
-    result = bmi2_get_sensor_config(&config, 1, &bmi270.sensor);
-    if (BMI2_E_NULL_PTR == result)
-    {
-        printf(" Error: Failed to get sensor config\n");
-        CY_ASSERT(0);
-    }
-
-    config.type = BMI2_ACCEL;
-    config.cfg.acc.odr = IMU_SAMPLE_RATE;
-    config.cfg.acc.range = IMU_SAMPLE_RANGE;
-    config.cfg.acc.bwp = BMI2_ACC_OSR4_AVG1;
-    config.cfg.acc.filter_perf = BMI2_PERF_OPT_MODE;
-    result = bmi2_set_sensor_config(&config, 1, &bmi270.sensor);
+#ifdef IMU_ACC 
+    struct bmi2_sens_config acc_cfg = {0};
+    acc_cfg.type = BMI2_ACCEL;
+    bmi2_get_sensor_config(&acc_cfg, 1, &bmi270.sensor);
+    acc_cfg.cfg.acc.odr = IMU_SAMPLE_RATE;
+    acc_cfg.cfg.acc.range = IMU_SAMPLE_RANGE;
+    acc_cfg.cfg.acc.bwp = BMI2_ACC_OSR4_AVG1;
+    acc_cfg.cfg.acc.filter_perf = BMI2_PERF_OPT_MODE;
+    result = bmi2_set_sensor_config(&acc_cfg, 1, &bmi270.sensor);
     if (BMI2_OK != result)
     {
         printf(" Error: Failed to set sensor config\n");
         CY_ASSERT(0);
     }
+#endif /* IMU_ACC */
     
+#ifdef IMU_GYR 
+    /* Configure gyroscope if enabled */
+    struct bmi2_sens_config gyr_cfg = {0};
+    gyr_cfg.type = BMI2_GYRO;
+    bmi2_get_sensor_config(&gyr_cfg, 1, &bmi270.sensor);
+    gyr_cfg.cfg.gyr.odr = IMU_GYRO_SAMPLE_RATE;
+    gyr_cfg.cfg.gyr.range = IMU_GYRO_SAMPLE_RANGE;
+    gyr_cfg.cfg.gyr.bwp = BMI2_GYR_NORMAL_MODE;
+    gyr_cfg.cfg.gyr.noise_perf = BMI2_POWER_OPT_MODE;
+    gyr_cfg.cfg.gyr.filter_perf = BMI2_PERF_OPT_MODE;
+    result = bmi2_set_sensor_config(&gyr_cfg, 1, &bmi270.sensor);
+    if (BMI2_OK != result)
+    {
+        printf(" Error: Failed to set sensor config\n");
+        CY_ASSERT(0);
+    }
+#endif /* IMU_GYR */
 
     result = imu_fifo_init();
     if (BMI2_OK != result)
@@ -204,7 +242,16 @@ static cy_rslt_t imu_fifo_init(void)
     cy_rslt_t result;
 
     /* Accel and gyro sensor are listed in array. */
-    uint8_t sensor_sel[] = { BMI2_ACCEL };
+    uint8_t sensor_sel[] =
+    { 
+#ifdef IMU_ACC
+        BMI2_ACCEL, 
+#endif /* IMU_ACC */
+#ifdef IMU_GYR
+        BMI2_GYRO,
+#endif /* IMU_GYR */
+    };
+
 
     /* Interrupt config structure for IMU interrupt */
     static cy_stc_sysint_t intrCfg =
@@ -217,8 +264,9 @@ static cy_rslt_t imu_fifo_init(void)
     static struct bmi2_int_pin_config pin_config = { 0 };
 
 
-    /* Accelerometer must be enabled after setting configurations */
-    result = bmi270_sensor_enable(sensor_sel, sizeof(sensor_sel), &bmi270.sensor);
+    /* Sensors must be enabled after setting configurations */
+    result = bmi270_sensor_enable(sensor_sel, (sizeof(sensor_sel) /
+                                  sizeof(sensor_sel[0])), &bmi270.sensor);
     if (BMI2_OK != result)
     {
         printf(" Error: Failed to enable sensor\n");
@@ -247,6 +295,7 @@ static cy_rslt_t imu_fifo_init(void)
     /* Length of FIFO frame. */
     fifoframe.length = BMI2_FIFO_RAW_DATA_BUFFER_SIZE;
 
+#ifdef IMU_ACC 
     /* Set FIFO configuration by enabling accelerometer */
     result = bmi2_set_fifo_config(BMI2_FIFO_ACC_EN, BMI2_ENABLE, &bmi270.sensor);
     if (BMI2_OK != result)
@@ -254,6 +303,17 @@ static cy_rslt_t imu_fifo_init(void)
         printf(" Error: Failed to enable FIFO configuration\n");
         return result;
     }
+#endif /* IMU_ACC */
+
+#ifdef IMU_GYR 
+    /* Set FIFO configuration by enabling gyroscope */
+    result = bmi2_set_fifo_config(BMI2_FIFO_GYR_EN, BMI2_ENABLE, &bmi270.sensor);
+    if (BMI2_OK != result)
+    {
+        printf(" Error: Failed to enable FIFO configuration\n");
+        return result;
+    }
+#endif /* IMU_GYR */
 
     /* To enable headerless mode, disable the header. */
     result = bmi2_set_fifo_config(BMI2_FIFO_HEADER_EN, BMI2_DISABLE, &bmi270.sensor);
@@ -383,7 +443,12 @@ cy_rslt_t imu_data_process(void)
     int16_t best_label;
     float max_score;
     uint16_t fifo_length = 0;
+#ifdef IMU_ACC
     uint16_t accel_frame_length;
+#endif /* IMU_ACC */
+#ifdef IMU_GYR
+    uint16_t gyro_frame_length;
+#endif /* IMU_GYR */
     uint16_t int_status = 0;
     uint16_t watermark = 0;
     uint16_t index = 0;
@@ -427,7 +492,7 @@ cy_rslt_t imu_data_process(void)
             printf(" Error: Failed to get FIFO watermark level\n");
             return result;
         }
-
+        
         result = bmi2_get_fifo_length(&fifo_length, &bmi270.sensor);
         if (BMI2_OK != result)
         {
@@ -454,27 +519,58 @@ cy_rslt_t imu_data_process(void)
             return result;
         }
 
+        /* Skip frames if needed */
+        if (imu_skip_frames > 0)
+        {
+            imu_skip_frames--;
+            Cy_GPIO_Write(CYBSP_USER_LED_PORT, CYBSP_USER_LED_PIN, CYBSP_LED_STATE_OFF);
+            return result;
+        }
+
+#ifdef IMU_ACC 
         /* Parse the FIFO data to extract accelerometer data from the FIFO buffer. */
         accel_frame_length = BMI2_FIFO_ACCEL_FRAME_COUNT;
         (void)bmi2_extract_accel(fifo_accel_data, &accel_frame_length, &fifoframe, &bmi270.sensor);
-
         if (BMI2_FIFO_ACCEL_FRAME_COUNT != accel_frame_length)
         {
             printf("Error: Expected number of Accelerometer frames not received\n");
             result = IMU_FIFO_INSUFFICIENT_DATA;
             return result;
         }
+#endif /* IMU_ACC */
+#ifdef IMU_GYR 
+        /* Parse FIFO data to extract gyroscope data from the FIFO buffer. */
+        gyro_frame_length = BMI2_FIFO_GYRO_FRAME_COUNT;
+        (void)bmi2_extract_gyro(fifo_gyro_data, &gyro_frame_length, &fifoframe, &bmi270.sensor);
+        if (BMI2_FIFO_GYRO_FRAME_COUNT != gyro_frame_length)
+        {
+            printf("Error: Expected number of Gyroscope frames not received\r\n");
+            result = IMU_FIFO_INSUFFICIENT_DATA;
+            return result;
+        }
+#endif /* IMU_GYR */
 
+#ifdef IMU_ACC
         for (index = 0; index < accel_frame_length; index++)
+#else
+        for (index = 0; index < gyro_frame_length; index++)
+#endif /* IMU_ACC */
         {
             /* Store the IMU values in a buffer. Change the orientation to
              * match training data.
              */
             float imu_buffer[IMU_NUM_AXIS] =
             {
-                fifo_accel_data[index].x / (float)IMU_DIVIDE,
-                fifo_accel_data[index].y / (float)IMU_DIVIDE,
-                fifo_accel_data[index].z / (float)IMU_DIVIDE,
+#ifdef IMU_ACC 
+                fifo_accel_data[index].x / (float)IMU_ACC_DIVIDE,
+                fifo_accel_data[index].y / (float)IMU_ACC_DIVIDE,
+                fifo_accel_data[index].z / (float)IMU_ACC_DIVIDE,
+#endif /* IMU_ACC */
+#ifdef IMU_GYR 
+                fifo_gyro_data[index].x / (float)IMU_GYRO_DIVIDE,
+                fifo_gyro_data[index].y / (float)IMU_GYRO_DIVIDE,
+                fifo_gyro_data[index].z / (float)IMU_GYRO_DIVIDE,
+#endif /* IMU_GYR */
             };
 
             /* Feed the DEEPCRAFT pre-processor */

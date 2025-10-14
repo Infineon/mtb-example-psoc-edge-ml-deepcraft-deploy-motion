@@ -7,8 +7,8 @@
 #
 ################################################################################
 # \copyright
-# Copyright 2025, Cypress Semiconductor Corporation (an Infineon company)
-# SPDX-License-Identifier: Apache-2.0
+# (c) 2025, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,5 +69,11 @@ COMBINE_SIGN_JSON?=configs/boot_with_extended_boot.json
 # cm33
 # cm55
 ML_DEEPCRAFT_CPU=cm55
+
+# Choose which IMU sensors needs to be enabled
+# ACCELEROMETER
+# GYROSCOPE
+# ACCELEROMETER_GYROSCOPE
+IMU_ENABLE_SENSOR=ACCELEROMETER_GYROSCOPE
 
 include ../common_app.mk

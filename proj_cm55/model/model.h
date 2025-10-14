@@ -1,25 +1,25 @@
 /*
-* ImagiNet Compiler 5.5.3417.65534+eec6da02588e3e83732ce489840158da4d7ee938
+* ImagiNet Compiler 5.6.3587.65534+7baf01877c82933e8f961e597cd7d3525350d561
 * Copyright © 2023- Imagimob AB, All Rights Reserved.
 * 
-* Generated at 08/20/2025 06:04:16 UTC. Any changes will be lost.
+* Generated at 09/25/2025 07:16:22 UTC. Any changes will be lost.
 * 
-* Model ID  7d692551-9ff2-49ea-8179-79b008aab89c
+* Model ID  4ea20ec6-5f03-450a-8ca9-54609ab13a14
 * 
 * Memory    Size                      Efficiency
-* Buffers   750 bytes (RAM)           100 %
-* State     17200 bytes (RAM)         100 %
-* Readonly  37384 bytes (Flash)       100 %
+* Buffers   3000 bytes (RAM)          100 %
+* State     23104 bytes (RAM)         100 %
+* Readonly  28272 bytes (Flash)       100 %
 * 
 * Exported functions:
 * 
 *  @description: Try read data from model.
-*  @param data_out Output features. Output float[6].
+*  @param data_out Output features. Output float[3].
 *  @return IPWIN_RET_SUCCESS (0) or IPWIN_RET_NODATA (-1), IPWIN_RET_ERROR (-2), IPWIN_RET_STREAMEND (-3)
 *  int IMAI_dequeue(float *data_out);
 * 
 *  @description: Try write data to model.
-*  @param data_in Input features. Input float[3].
+*  @param data_in Input features. Input float[2,3].
 *  @return IPWIN_RET_SUCCESS (0) or IPWIN_RET_NODATA (-1), IPWIN_RET_ERROR (-2), IPWIN_RET_STREAMEND (-3)
 *  int IMAI_enqueue(const float *data_in);
 * 
@@ -40,14 +40,13 @@
 * 
 * Notes:
 *     -> This code was generated with DEEPCRAFT Studio using:
-*         ml-coretools 3.0.0.8583.
-*         tensorflow 2.15.0.
+*         ml-coretools 3.0.0.8927.
+*         tensorflow 2.19.0.
+*         ethos-u-vela 4.3.0.
 *     -> This code requires the following Modus Toolbox libraries (add them to your
 *     project using the Library Manager):
 *         ml-middleware 3.1.0.
 *         ml-tflite-micro 3.1.0.
-*     -> This code requires the Modus Toolbox PSOC Edge E84 Early Access Pack (EAP)
-*     version 0.3.2.5362.
 */
 
 #include <stdbool.h>
@@ -61,7 +60,7 @@ typedef int32_t q31_t;       // 32-bit fractional data type in Q1.31 format.
 typedef int64_t q63_t;       // 64-bit fractional data type in Q1.63 format.
 
 // Model GUID (16 bytes)
-#define IMAI_MODEL_ID {0x51, 0x25, 0x69, 0x7d, 0xf2, 0x9f, 0xea, 0x49, 0x81, 0x79, 0x79, 0xb0, 0x08, 0xaa, 0xb8, 0x9c}
+#define IMAI_MODEL_ID {0xc6, 0x0e, 0xa2, 0x4e, 0x03, 0x5f, 0x0a, 0x45, 0x8c, 0xa9, 0x54, 0x60, 0x9a, 0xb1, 0x3a, 0x14}
 
 
 // First nibble is bit encoding, second nibble is number of bytes
@@ -85,21 +84,21 @@ typedef int64_t q63_t;       // 64-bit fractional data type in Q1.63 format.
 #define IMAGINET_TYPES_UINT32    (0x74)
 #define IMAGINET_TYPES_UINT64    (0x78)
 
-// data_out [6] (24 bytes)
+// data_out [3] (12 bytes)
 #define IMAI_DATA_OUT_RANK (1)
-#define IMAI_DATA_OUT_SHAPE (((int[]){6})
-#define IMAI_DATA_OUT_COUNT (6)
+#define IMAI_DATA_OUT_SHAPE (((int[]){3})
+#define IMAI_DATA_OUT_COUNT (3)
 #define IMAI_DATA_OUT_TYPE float
 #define IMAI_DATA_OUT_TYPE_ID IMAGINET_TYPES_FLOAT32
 #define IMAI_DATA_OUT_SHIFT 0
 #define IMAI_DATA_OUT_OFFSET 0
 #define IMAI_DATA_OUT_SCALE 1
-#define IMAI_DATA_OUT_SYMBOLS {"unlabelled", "standing", "running", "walking", "sitting", "jumping"}
+#define IMAI_DATA_OUT_SYMBOLS {"unlabelled", "circle", "shaking"}
 
-// data_in [3] (12 bytes)
-#define IMAI_DATA_IN_RANK (1)
-#define IMAI_DATA_IN_SHAPE (((int[]){3})
-#define IMAI_DATA_IN_COUNT (3)
+// data_in [2,3] (24 bytes)
+#define IMAI_DATA_IN_RANK (2)
+#define IMAI_DATA_IN_SHAPE (((int[]){3, 2})
+#define IMAI_DATA_IN_COUNT (6)
 #define IMAI_DATA_IN_TYPE float
 #define IMAI_DATA_IN_TYPE_ID IMAGINET_TYPES_FLOAT32
 #define IMAI_DATA_IN_SHIFT 0
@@ -131,6 +130,7 @@ void IMAI_hook_region(bool entered, int32_t region_id);
 
 // Symbol IMAI_PROFILING must be defined to enable profiling of models
 void IMAI_mtb_models_profile_log();
+void IMAI_mtb_models_print_info();
 #define IMAI_MAX_MTB_MODELS 4
 extern int32_t IMAI_mtb_models_count;
 extern mtb_ml_model_t* IMAI_mtb_models[IMAI_MAX_MTB_MODELS];
