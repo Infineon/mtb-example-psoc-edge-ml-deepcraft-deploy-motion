@@ -28,6 +28,9 @@ All IMU-related configurations are set in the config.h file in the CM33 NS and C
 
 The pre-processor uses a 50-frame sliding window for evaluating the data over a period of 2 seconds as the data rate is 50 Hz. The preprocessing layers for the movement type detection application is shown in **Figure 1**.
 
+> **Note:**
+Use `SENSOR_REMAPPING` macro in the `common.mk` file to align sensor orienation with PSOC&trade; 6 AI Evaluation Kit (CY8CKIT-062S2-AI).
+
 **Figure 1. Movement type detection pre-processing layers**
 
 ![](../images/deploy-motion-preprocessing.png)

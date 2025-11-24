@@ -9,33 +9,33 @@
 *
 *
 ********************************************************************************
-* (c) 2024-2025, Infineon Technologies AG, or an affiliate of Infineon
-* Technologies AG. All rights reserved.
-* This software, associated documentation and materials ("Software") is
-* owned by Infineon Technologies AG or one of its affiliates ("Infineon")
-* and is protected by and subject to worldwide patent protection, worldwide
-* copyright laws, and international treaty provisions. Therefore, you may use
-* this Software only as provided in the license agreement accompanying the
-* software package from which you obtained this Software. If no license
-* agreement applies, then any use, reproduction, modification, translation, or
-* compilation of this Software is prohibited without the express written
-* permission of Infineon.
-* 
-* Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE
-* IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-* INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF
-* THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES SUCH AS WARRANTIES OF FITNESS FOR A
-* SPECIFIC USE/PURPOSE OR MERCHANTABILITY.
-* Infineon reserves the right to make changes to the Software without notice.
-* You are responsible for properly designing, programming, and testing the
-* functionality and safety of your intended application of the Software, as
-* well as complying with any legal requirements related to its use. Infineon
-* does not guarantee that the Software will be free from intrusion, data theft
-* or loss, or other breaches ("Security Breaches"), and Infineon shall have
-* no liability arising out of any Security Breaches. Unless otherwise
-* explicitly approved by Infineon, the Software may not be used in any
-* application where a failure of the Product or any consequences of the use
-* thereof can reasonably be expected to result in personal injury.
+ * (c) 2024-2025, Infineon Technologies AG, or an affiliate of Infineon
+ * Technologies AG. All rights reserved.
+ * This software, associated documentation and materials ("Software") is
+ * owned by Infineon Technologies AG or one of its affiliates ("Infineon")
+ * and is protected by and subject to worldwide patent protection, worldwide
+ * copyright laws, and international treaty provisions. Therefore, you may use
+ * this Software only as provided in the license agreement accompanying the
+ * software package from which you obtained this Software. If no license
+ * agreement applies, then any use, reproduction, modification, translation, or
+ * compilation of this Software is prohibited without the express written
+ * permission of Infineon.
+ *
+ * Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE
+ * IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF
+ * THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES SUCH AS WARRANTIES OF FITNESS FOR A
+ * SPECIFIC USE/PURPOSE OR MERCHANTABILITY.
+ * Infineon reserves the right to make changes to the Software without notice.
+ * You are responsible for properly designing, programming, and testing the
+ * functionality and safety of your intended application of the Software, as
+ * well as complying with any legal requirements related to its use. Infineon
+ * does not guarantee that the Software will be free from intrusion, data theft
+ * or loss, or other breaches ("Security Breaches"), and Infineon shall have
+ * no liability arising out of any Security Breaches. Unless otherwise
+ * explicitly approved by Infineon, the Software may not be used in any
+ * application where a failure of the Product or any consequences of the use
+ * thereof can reasonably be expected to result in personal injury.
 *******************************************************************************/
 #include "cybsp.h"
 #include "mtb_bmi270.h"
@@ -92,12 +92,12 @@ mtb_bmi270_t bmi270;
 /* Number of bytes of FIFO data */
 static uint8_t fifo_data[BMI2_FIFO_RAW_DATA_BUFFER_SIZE] = { 0 };
 
-#ifdef IMU_ACC 
+#ifdef IMU_ACC
 /* Array of accelerometer frames */
 static struct bmi2_sens_axes_data fifo_accel_data[BMI2_FIFO_ACCEL_FRAME_COUNT] = { { 0 } };
 #endif /* IMU_ACC */
 
-#ifdef IMU_GYR 
+#ifdef IMU_GYR
 /* Array of gyroscope frames */
 static struct bmi2_sens_axes_data fifo_gyro_data[BMI2_FIFO_GYRO_FRAME_COUNT] = { { 0 } };
 #endif /* IMU_GYR */
@@ -116,6 +116,7 @@ static uint8_t imu_skip_frames = NUM_IMU_FRAMES_TO_SKIP;
 *******************************************************************************/
 static void imu_interrupt_handler(void);
 static cy_rslt_t imu_fifo_init(void);
+void imu_remap_sensor_orientation(struct bmi2_sens_axes_data *data);
 
 /*******************************************************************************
 * Function Definitions
@@ -178,7 +179,7 @@ cy_rslt_t imu_init(void)
         CY_ASSERT(0);
     }
 
-#ifdef IMU_ACC 
+#ifdef IMU_ACC
     struct bmi2_sens_config acc_cfg = {0};
     acc_cfg.type = BMI2_ACCEL;
     bmi2_get_sensor_config(&acc_cfg, 1, &bmi270.sensor);
@@ -193,8 +194,8 @@ cy_rslt_t imu_init(void)
         CY_ASSERT(0);
     }
 #endif /* IMU_ACC */
-    
-#ifdef IMU_GYR 
+
+#ifdef IMU_GYR
     /* Configure gyroscope if enabled */
     struct bmi2_sens_config gyr_cfg = {0};
     gyr_cfg.type = BMI2_GYRO;
@@ -243,9 +244,9 @@ static cy_rslt_t imu_fifo_init(void)
 
     /* Accel and gyro sensor are listed in array. */
     uint8_t sensor_sel[] =
-    { 
+    {
 #ifdef IMU_ACC
-        BMI2_ACCEL, 
+        BMI2_ACCEL,
 #endif /* IMU_ACC */
 #ifdef IMU_GYR
         BMI2_GYRO,
@@ -295,7 +296,7 @@ static cy_rslt_t imu_fifo_init(void)
     /* Length of FIFO frame. */
     fifoframe.length = BMI2_FIFO_RAW_DATA_BUFFER_SIZE;
 
-#ifdef IMU_ACC 
+#ifdef IMU_ACC
     /* Set FIFO configuration by enabling accelerometer */
     result = bmi2_set_fifo_config(BMI2_FIFO_ACC_EN, BMI2_ENABLE, &bmi270.sensor);
     if (BMI2_OK != result)
@@ -305,7 +306,7 @@ static cy_rslt_t imu_fifo_init(void)
     }
 #endif /* IMU_ACC */
 
-#ifdef IMU_GYR 
+#ifdef IMU_GYR
     /* Set FIFO configuration by enabling gyroscope */
     result = bmi2_set_fifo_config(BMI2_FIFO_GYR_EN, BMI2_ENABLE, &bmi270.sensor);
     if (BMI2_OK != result)
@@ -492,7 +493,7 @@ cy_rslt_t imu_data_process(void)
             printf(" Error: Failed to get FIFO watermark level\n");
             return result;
         }
-        
+
         result = bmi2_get_fifo_length(&fifo_length, &bmi270.sensor);
         if (BMI2_OK != result)
         {
@@ -527,7 +528,7 @@ cy_rslt_t imu_data_process(void)
             return result;
         }
 
-#ifdef IMU_ACC 
+#ifdef IMU_ACC
         /* Parse the FIFO data to extract accelerometer data from the FIFO buffer. */
         accel_frame_length = BMI2_FIFO_ACCEL_FRAME_COUNT;
         (void)bmi2_extract_accel(fifo_accel_data, &accel_frame_length, &fifoframe, &bmi270.sensor);
@@ -538,7 +539,7 @@ cy_rslt_t imu_data_process(void)
             return result;
         }
 #endif /* IMU_ACC */
-#ifdef IMU_GYR 
+#ifdef IMU_GYR
         /* Parse FIFO data to extract gyroscope data from the FIFO buffer. */
         gyro_frame_length = BMI2_FIFO_GYRO_FRAME_COUNT;
         (void)bmi2_extract_gyro(fifo_gyro_data, &gyro_frame_length, &fifoframe, &bmi270.sensor);
@@ -556,17 +557,28 @@ cy_rslt_t imu_data_process(void)
         for (index = 0; index < gyro_frame_length; index++)
 #endif /* IMU_ACC */
         {
+
+#ifdef USE_SENSOR_REMAPPING
+#ifdef IMU_ACC
+            /* Remapping the accelerometer data based on orientation of sensor */
+            imu_remap_sensor_orientation(&(fifo_accel_data[index]));
+#endif
+#ifdef IMU_GYR
+            /* Remapping the gyroscope data based on orientation of sensor */
+            imu_remap_sensor_orientation(&(fifo_gyro_data[index]));
+#endif
+#endif
             /* Store the IMU values in a buffer. Change the orientation to
              * match training data.
              */
             float imu_buffer[IMU_NUM_AXIS] =
             {
-#ifdef IMU_ACC 
+#ifdef IMU_ACC
                 fifo_accel_data[index].x / (float)IMU_ACC_DIVIDE,
                 fifo_accel_data[index].y / (float)IMU_ACC_DIVIDE,
                 fifo_accel_data[index].z / (float)IMU_ACC_DIVIDE,
 #endif /* IMU_ACC */
-#ifdef IMU_GYR 
+#ifdef IMU_GYR
                 fifo_gyro_data[index].x / (float)IMU_GYRO_DIVIDE,
                 fifo_gyro_data[index].y / (float)IMU_GYRO_DIVIDE,
                 fifo_gyro_data[index].z / (float)IMU_GYRO_DIVIDE,
@@ -625,5 +637,24 @@ cy_rslt_t imu_data_process(void)
     return result;
 }
 
+/*******************************************************************************
+* Function Name: imu_remap_sensor_orientation
+********************************************************************************
+* Summary:
+* Remapping the sensor data to match with CY8CKIT-062S2-AI orientation.
+*
+* Parameters:
+* data: pointer IMU Sensors data
+*
+* Return:
+* None
+*
+*******************************************************************************/
+void imu_remap_sensor_orientation(struct bmi2_sens_axes_data *data)
+{
+    /* remapping the data */
+    data->x = -(data->x);
+    data->y = -(data->y);
+}
 
 /* [] END OF FILE */

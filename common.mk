@@ -54,6 +54,18 @@ MTB_SUPPORTED_TOOLCHAINS?=GCC_ARM ARM LLVM_ARM
 # launch configurations for your IDE.
 CONFIG=Debug
 
+# Option to remap the sensor orienation to align with CY8CKIT-062S2-AI.
+#
+# ENABLED   - Sensor data is remapped
+#
+# DISABLED  - Actual sensor data
+SENSOR_REMAPPING=ENABLED
+
+ifeq ($(SENSOR_REMAPPING),ENABLED)
+DEFINES+=USE_SENSOR_REMAPPING
+endif
+
+
 # Check if Release mode is used for GCC_ARM toolchain. If yes, trigger an error
 ifeq ($(TOOLCHAIN),GCC_ARM)
     ifeq ($(CONFIG),Release)

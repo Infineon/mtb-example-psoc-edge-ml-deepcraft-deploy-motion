@@ -10,7 +10,7 @@ This code example has a three project structure: CM33 secure, CM33 non-secure, a
 
 [View this README on GitHub.](https://github.com/Infineon/mtb-example-psoc-edge-ml-deepcraft-deploy-motion)
 
-[Provide feedback on this code example.](https://cypress.co1.qualtrics.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyNDE1MjQiLCJTcGVjIE51bWJlciI6IjAwMi00MTUyNCIsIkRvYyBUaXRsZSI6IlBTT0MmdHJhZGU7IEVkZ2UgTUNVOiBNYWNoaW5lIGxlYXJuaW5nIOKAkyBERUVQQ1JBRlQmdHJhZGU7IGRlcGxveSBtb3Rpb24iLCJyaWQiOiJuaWNob2xhcyBzaGFycCIsIkRvYyB2ZXJzaW9uIjoiMi4xLjAiLCJEb2MgTGFuZ3VhZ2UiOiJFbmdsaXNoIiwiRG9jIERpdmlzaW9uIjoiTUNEIiwiRG9jIEJVIjoiSUNXIiwiRG9jIEZhbWlseSI6IlBTT0MifQ==)
+[Provide feedback on this code example.](https://cypress.co1.qualtrics.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyNDE1MjQiLCJTcGVjIE51bWJlciI6IjAwMi00MTUyNCIsIkRvYyBUaXRsZSI6IlBTT0MmdHJhZGU7IEVkZ2UgTUNVOiBNYWNoaW5lIGxlYXJuaW5nIOKAkyBERUVQQ1JBRlQmdHJhZGU7IGRlcGxveSBtb3Rpb24iLCJyaWQiOiJuaWNob2xhcy5zaGFycEBpbmZpbmVvbi5jb20iLCJEb2MgdmVyc2lvbiI6IjIuMi4wIiwiRG9jIExhbmd1YWdlIjoiRW5nbGlzaCIsIkRvYyBEaXZpc2lvbiI6Ik1DRCIsIkRvYyBCVSI6IklDVyIsIkRvYyBGYW1pbHkiOiJQU09DIn0=)
 
 See the [Design and implementation](docs/design_and_implementation.md) for the functional description of this code example.
 
@@ -103,7 +103,9 @@ See [Using the code example](docs/using_the_code_example.md) for instructions on
 
 The code example can be updated to use other starter models from DEEPCRAFT&trade; Studio. For more information, see [Deploy model on PSOC&trade; 6 and PSOC&trade; Edge boards](https://developer.imagimob.com/deepcraft-studio/deployment/deploy-models-supported-boards/deploy-model-PSOC-6-PSOC-Edge). For details on generating, optimizing, and validating the model code using DEEPCRAFT&trade; Studio, see [Code generation for Infineon boards](https://developer.imagimob.com/deepcraft-studio/code-generation/code-gen-infineon-boards).
 
-> **Note:** The model provided in this example is taken from the starter models from DEEPCRAFT&trade; Studio and is not production ready. You can develop your own models in DEEPCRAFT&trade; Studio and use this example to deploy them on PSOC&trade; Edge MCU by replacing the corresponding .c/.h files.
+> **Note:**
+> 1. The model provided in this example is taken from the starter models from DEEPCRAFT&trade; Studio and is not production ready. You can develop your own models in DEEPCRAFT&trade; Studio and use this example to deploy them on PSOC&trade; Edge MCU by replacing the corresponding .c/.h files.
+> 2. By default, the orientation of the BMI270 sensor is aligned with the PSOC&trade; 6 AI Evaluation Kit. To disable this alignment, set the `SENSOR_REMAPPING` macro to `DISABLED` in the common.mk file.
 
 ## Related resources
 
@@ -133,6 +135,7 @@ Document title: *CE241524* – *PSOC&trade; Edge MCU: Machine learning – DEEPC
  1.x.0   | New code example <br> Early access release
  2.0.0   | GitHub release
  2.1.0   | Updated to support new model and CE structure
+ 2.2.0   | Aligned BMI270 sensor orientation with CY8CKIT-062S2-AI
 <br>
 
 
