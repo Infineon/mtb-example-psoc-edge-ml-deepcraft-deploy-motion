@@ -137,6 +137,10 @@ endif
 # Select softfp or hardfp floating point. Default is softfp.
 VFP_SELECT+=hardfp
 
+ifeq ($(VFP_SELECT),softfp)
+$(error softfp floating point is not supported for this code example)
+endif
+
 # Additional / custom C compiler flags.
 #
 # NOTE: Includes and defines should use the INCLUDES and DEFINES variable

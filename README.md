@@ -11,7 +11,7 @@ This code example has a three project structure: CM33 secure, CM33 non-secure, a
 
 [View this README on GitHub.](https://github.com/Infineon/mtb-example-psoc-edge-ml-deepcraft-deploy-motion)
 
-[Provide feedback on this code example.](https://yourvoice.infineon.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyNDE1MjQiLCJTcGVjIE51bWJlciI6IjAwMi00MTUyNCIsIkRvYyBUaXRsZSI6IlBTT0MmdHJhZGU7IEVkZ2UgTUNVOiBNYWNoaW5lIGxlYXJuaW5nIOKAkyBERUVQQ1JBRlQmdHJhZGU7IGRlcGxveSBtb3Rpb24iLCJyaWQiOiJuaWNob2xhcy5zaGFycEBpbmZpbmVvbi5jb20iLCJEb2MgdmVyc2lvbiI6IjIuNC4wIiwiRG9jIExhbmd1YWdlIjoiRW5nbGlzaCIsIkRvYyBEaXZpc2lvbiI6Ik1DRCIsIkRvYyBCVSI6IklDVyIsIkRvYyBGYW1pbHkiOiJQU09DIn0=)
+[Provide feedback on this code example.](https://yourvoice.infineon.com/jfe/form/SV_1NTns53sK2yiljn?Q_EED=eyJVbmlxdWUgRG9jIElkIjoiQ0UyNDE1MjQiLCJTcGVjIE51bWJlciI6IjAwMi00MTUyNCIsIkRvYyBUaXRsZSI6IlBTT0MmdHJhZGU7IEVkZ2UgTUNVOiBNYWNoaW5lIGxlYXJuaW5nIOKAkyBERUVQQ1JBRlQmdHJhZGU7IGRlcGxveSBtb3Rpb24iLCJyaWQiOiJuaWNob2xhcy5zaGFycEBpbmZpbmVvbi5jb20iLCJEb2MgdmVyc2lvbiI6IjIuNC4xIiwiRG9jIExhbmd1YWdlIjoiRW5nbGlzaCIsIkRvYyBEaXZpc2lvbiI6Ik1DRCIsIkRvYyBCVSI6IklDVyIsIkRvYyBGYW1pbHkiOiJQU09DIn0=)
 
 See the [Design and implementation](docs/design_and_implementation.md) for the functional description of this code example.
 
@@ -33,6 +33,7 @@ See the [Design and implementation](docs/design_and_implementation.md) for the f
 > **Note:**
 > 1. IAR is not supported by TensorFlow Lite for the Microcontrollers (TFLM) library
 > 2. This code example fails to build in RELEASE mode with the GCC_ARM toolchain v14.2.1 as it does not recognize some of the Helium instructions of the CMSIS-DSP library. This issue is not present in the ARM&reg; Compiler for Embedded (armclang)
+> 3. This code example currently supports the VFP_SELECT option "hardfp" only. Setting "softfp" may cause build failure.
 
 
 ## Supported kits (make variable 'TARGET')
@@ -140,6 +141,7 @@ Document title: *CE241524* – *PSOC&trade; Edge MCU: Machine learning – DEEPC
  2.2.0   | Aligned BMI270 sensor orientation with CY8CKIT-062S2-AI
  2.3.0   | Updated design files to fix ModusToolbox&trade; v3.7 build warnings
  2.4.0   | Added support for KIT_PSE84_HMI
+ 2.4.1   | Added a check for unsupported build configuration.
 <br>
 
 
